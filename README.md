@@ -947,14 +947,6 @@ redirect_stderr=true
 stdout_logfile=/path/to/storage/logs/worker.log
 ```
 
-## 📄 Licença
-
-Este projeto foi desenvolvido como parte de um desafio técnico.
-
-## 👤 Autor
-
-Desenvolvido para o desafio técnico de Backend.
-
 ---
 
 **Desenvolvido com ❤️ usando Laravel**
