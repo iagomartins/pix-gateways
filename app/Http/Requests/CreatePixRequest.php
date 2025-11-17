@@ -24,6 +24,13 @@ class CreatePixRequest extends FormRequest
         return [
             'amount' => ['required', 'numeric', 'min:0.01'],
             'description' => ['nullable', 'string', 'max:255'],
+            'merchant_id' => ['nullable', 'string', 'max:255'],
+            'currency' => ['nullable', 'string', 'size:3'],
+            'order_id' => ['nullable', 'string', 'max:255'],
+            'payer' => ['nullable', 'array'],
+            'payer.name' => ['nullable', 'string', 'max:255'],
+            'payer.cpf_cnpj' => ['nullable', 'string', 'max:14'],
+            'expires_in' => ['nullable', 'integer', 'min:1'],
         ];
     }
 

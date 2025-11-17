@@ -37,6 +37,12 @@ test: ## Executa os testes
 queue: ## Mostra os logs do worker de filas
 	docker-compose logs -f queue
 
+route-clear: ## Limpa o cache de rotas
+	docker-compose exec app php artisan route:clear
+
+route-list: ## Lista todas as rotas
+	docker-compose exec app php artisan route:list
+
 clean: ## Para containers, remove volumes e limpa tudo
 	docker-compose down -v
 	docker system prune -f

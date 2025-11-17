@@ -31,10 +31,11 @@ class PixService
             $gateway = GatewayFactory::create($user);
 
             // Cria o PIX na subadquirente
-            $response = $gateway->createPix([
-                'amount' => $data['amount'],
-                'description' => $data['description'] ?? 'Pagamento PIX',
+            // Pass user_id to gateway for merchant_id generation
+            $gatewayData = array_merge($data, [
+                'user_id' => $user->id,
             ]);
+            $response = $gateway->createPix($gatewayData);
 
             // Normaliza a resposta
             $normalized = $gateway->normalizePixResponse($response);

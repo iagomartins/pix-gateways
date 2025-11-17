@@ -520,27 +520,168 @@ Authorization: Bearer {token}
 
 #### 3. Webhook (Público)
 
+O endpoint de webhook aceita diferentes formatos de payload dependendo da subadquirente e do tipo de transação. O sistema detecta automaticamente o formato e processa o webhook adequadamente.
+
+##### 3.1. SubadqA - PIX Webhook
+
 ```http
 POST /api/webhook
 Content-Type: application/json
 
 {
-    "event": "payment.completed",
-    "data": {
-        "id": "123",
-        "status": "paid"
-    }
+  "event": "pix_payment_confirmed",
+  "transaction_id": "f1a2b3c4d5e6",
+  "pix_id": "PIX123456789",
+  "status": "CONFIRMED",
+  "amount": 125.50,
+  "payer_name": "João da Silva",
+  "payer_cpf": "12345678900",
+  "payment_date": "2025-11-13T14:25:00Z",
+  "metadata": {
+    "source": "SubadqA",
+    "environment": "sandbox"
+  }
 }
 ```
+
+**Campos Obrigatórios:**
+
+- `event` (deve conter "pix" ou ter campo `pix_id`)
+- `transaction_id` ou `pix_id` (usado como external_id)
+- `status` (CONFIRMED, PAID, CANCELLED, FAILED, ou padrão PENDING)
+
+**Campos Opcionais:**
+
+- `amount`, `payer_name`, `payer_cpf`, `payment_date`, `metadata`
+
+##### 3.2. SubadqA - Withdraw Webhook
+
+```http
+POST /api/webhook
+Content-Type: application/json
+
+{
+  "event": "withdraw_completed",
+  "withdraw_id": "WD123456789",
+  "transaction_id": "T987654321",
+  "status": "SUCCESS",
+  "amount": 500.00,
+  "requested_at": "2025-11-13T13:10:00Z",
+  "completed_at": "2025-11-13T13:12:30Z",
+  "metadata": {
+    "source": "SubadqA",
+    "destination_bank": "Itaú"
+  }
+}
+```
+
+**Campos Obrigatórios:**
+
+- `event` (deve conter "withdraw" ou ter campo `withdraw_id`)
+- `withdraw_id` ou `transaction_id` (usado como external_id)
+- `status` (SUCCESS, FAILED, CANCELLED, ou padrão PENDING)
+
+**Campos Opcionais:**
+
+- `amount`, `completed_at`, `requested_at`, `metadata`
+
+##### 3.3. SubadqB - PIX Webhook
+
+```http
+POST /api/webhook
+Content-Type: application/json
+
+{
+  "type": "pix.status_update",
+  "data": {
+    "id": "PX987654321",
+    "status": "PAID",
+    "value": 250.00,
+    "payer": {
+      "name": "Maria Oliveira",
+      "document": "98765432100"
+    },
+    "confirmed_at": "2025-11-13T14:40:00Z"
+  },
+  "signature": "d1c4b6f98eaa"
+}
+```
+
+**Campos Obrigatórios:**
+
+- `type` (deve conter "pix")
+- `data.id` (usado como external_id)
+- `data.status` (PAID, CONFIRMED, CANCELLED, FAILED, ou padrão PENDING)
+
+**Campos Opcionais:**
+
+- `data.value` ou `data.amount`, `data.payer.name`, `data.payer.document`, `data.confirmed_at`, `signature`
+
+##### 3.4. SubadqB - Withdraw Webhook
+
+```http
+POST /api/webhook
+Content-Type: application/json
+
+{
+  "type": "withdraw.status_update",
+  "data": {
+    "id": "WDX54321",
+    "status": "DONE",
+    "amount": 850.00,
+    "bank_account": {
+      "bank": "Nubank",
+      "agency": "0001",
+      "account": "1234567-8"
+    },
+    "processed_at": "2025-11-13T13:45:10Z"
+  },
+  "signature": "aabbccddeeff112233"
+}
+```
+
+**Campos Obrigatórios:**
+
+- `type` (deve conter "withdraw")
+- `data.id` (usado como external_id)
+- `data.status` (DONE, SUCCESS, FAILED, CANCELLED, ou padrão PENDING)
+
+**Campos Opcionais:**
+
+- `data.amount`, `data.processed_at`, `data.bank_account`, `signature`
 
 **Resposta de Sucesso (200):**
 
 ```json
 {
   "success": true,
-  "message": "Webhook recebido"
+  "message": "Webhook de PIX processado com sucesso"
 }
 ```
+
+ou
+
+```json
+{
+  "success": true,
+  "message": "Webhook de saque processado com sucesso"
+}
+```
+
+**Resposta de Erro (400/404/500):**
+
+```json
+{
+  "success": false,
+  "message": "Formato de webhook não reconhecido"
+}
+```
+
+**Detecção Automática:**
+
+- **Gateway:** Detectado pelo campo `event` (SubadqA) ou `type`/`signature` (SubadqB)
+- **Tipo de Transação:** Detectado pelo conteúdo do campo `event` ou `type`
+- **External ID:** Extraído automaticamente baseado no gateway e tipo de transação
 
 #### 4. Criar PIX (Protegido)
 
@@ -669,7 +810,23 @@ Importe a collection do Postman (disponível no repositório) ou configure manua
 
 ## 🔄 Processamento de Webhooks
 
-O sistema simula o recebimento de webhooks através de Jobs assíncronos. Após criar um PIX ou saque:
+O sistema processa webhooks recebidos de subadquirentes externas e também simula webhooks através de Jobs assíncronos para testes.
+
+### Recebimento de Webhooks Externos
+
+Quando uma subadquirente envia um webhook para `/api/webhook`:
+
+1. O sistema detecta automaticamente o tipo de gateway (SubadqA ou SubadqB)
+2. Identifica o tipo de transação (PIX ou Withdraw)
+3. Extrai o `external_id` do payload
+4. Busca a transação correspondente no banco de dados
+5. Normaliza os dados usando o webhook handler apropriado
+6. Atualiza o status e informações da transação
+7. Cria um log na tabela `webhook_logs`
+
+### Simulação de Webhooks (Jobs Assíncronos)
+
+Após criar um PIX ou saque:
 
 1. O job é despachado para a fila com um delay de 2-5 segundos
 2. O job gera um payload simulado baseado no tipo de gateway

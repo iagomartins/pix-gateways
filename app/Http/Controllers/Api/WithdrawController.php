@@ -25,7 +25,22 @@ class WithdrawController extends Controller
     public function store(CreateWithdrawRequest $request): JsonResponse
     {
         try {
+            Log::info('WithdrawController::store called', [
+                'url' => $request->fullUrl(),
+                'method' => $request->method(),
+                'payload' => $request->all(),
+                'user_id' => Auth::id(),
+            ]);
+
             $user = Auth::user();
+
+            if (!$user) {
+                Log::warning('WithdrawController: User not authenticated');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Não autenticado',
+                ], 401);
+            }
 
             if (!$user->gateway_id) {
                 return response()->json([
@@ -52,6 +67,7 @@ class WithdrawController extends Controller
             Log::error('Erro ao criar saque', [
                 'user_id' => Auth::id(),
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([

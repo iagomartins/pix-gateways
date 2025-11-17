@@ -31,10 +31,11 @@ class WithdrawService
             $gateway = GatewayFactory::create($user);
 
             // Cria o saque na subadquirente
-            $response = $gateway->createWithdraw([
-                'amount' => $data['amount'],
-                'bank_account' => $data['bank_account'],
+            // Pass user_id to gateway for merchant_id generation
+            $gatewayData = array_merge($data, [
+                'user_id' => $user->id,
             ]);
+            $response = $gateway->createWithdraw($gatewayData);
 
             // Normaliza a resposta
             $normalized = $gateway->normalizeWithdrawResponse($response);

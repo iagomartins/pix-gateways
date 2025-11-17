@@ -27,9 +27,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     
     // PIX
-    Route::post('/pix', [PixController::class, 'store']);
+    Route::post('/pix', [PixController::class, 'store'])->name('api.pix.store');
 
     // Saques
-    Route::post('/withdraw', [WithdrawController::class, 'store']);
+    Route::post('/withdraw', [WithdrawController::class, 'store'])->name('api.withdraw.store');
 });
 
