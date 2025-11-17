@@ -39,6 +39,13 @@ class Handler extends ExceptionHandler
      */
     protected function unauthenticated($request, AuthenticationException $exception)
     {
+        \Illuminate\Support\Facades\Log::info('Exception handler: unauthenticated', [
+            'path' => $request->path(),
+            'is_api' => $request->is('api/*'),
+            'expects_json' => $request->expectsJson(),
+            'redirect_to' => $exception->redirectTo(),
+        ]);
+
         // Always return JSON for API routes
         if ($request->is('api/*') || $request->expectsJson()) {
             return response()->json([

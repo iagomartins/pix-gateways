@@ -32,12 +32,20 @@ class Authenticate extends Middleware
      */
     protected function unauthenticated($request, array $guards)
     {
+        \Illuminate\Support\Facades\Log::warning('Authentication failed', [
+            'path' => $request->path(),
+            'is_api' => $request->is('api/*'),
+            'expects_json' => $request->expectsJson(),
+            'guards' => $guards,
+            'authorization_header' => $request->header('Authorization') ? 'present' : 'missing',
+        ]);
+
         // For API routes, always return JSON response
         if ($request->is('api/*') || $request->expectsJson()) {
             throw new AuthenticationException(
                 'Unauthenticated.',
                 $guards,
-                $this->redirectTo($request)
+                null // Force null redirect for API routes
             );
         }
 
