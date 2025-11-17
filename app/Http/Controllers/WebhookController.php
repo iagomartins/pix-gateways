@@ -36,6 +36,15 @@ class WebhookController extends Controller
                 'headers' => $request->headers->all(),
             ]);
 
+            // Handle empty payloads gracefully
+            if (empty($payload)) {
+                Log::info('Webhook recebido com payload vazio');
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Webhook recebido',
+                ]);
+            }
+
             // Detect gateway type and transaction type from payload
             $gatewayType = $this->detectGatewayType($payload);
             $transactionType = $this->detectTransactionType($payload, $gatewayType);
@@ -43,9 +52,9 @@ class WebhookController extends Controller
             if (!$gatewayType || !$transactionType) {
                 Log::warning('Webhook não reconhecido', ['payload' => $payload]);
                 return response()->json([
-                    'success' => false,
-                    'message' => 'Formato de webhook não reconhecido',
-                ], 400);
+                    'success' => true,
+                    'message' => 'Webhook recebido',
+                ]);
             }
 
             // Extract external_id based on gateway and transaction type
@@ -54,64 +63,79 @@ class WebhookController extends Controller
             if (!$externalId) {
                 Log::warning('Webhook sem external_id', ['payload' => $payload]);
                 return response()->json([
-                    'success' => false,
-                    'message' => 'External ID não encontrado no webhook',
-                ], 400);
+                    'success' => true,
+                    'message' => 'Webhook recebido',
+                ]);
             }
 
             // Process webhook based on transaction type
-            if ($transactionType === 'pix') {
-                $pix = $this->pixRepository->findByExternalId($externalId);
-                
-                if (!$pix) {
-                    Log::warning('PIX não encontrado para webhook', [
-                        'external_id' => $externalId,
-                        'payload' => $payload,
-                    ]);
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'PIX não encontrado',
-                    ], 404);
-                }
+            try {
+                if ($transactionType === 'pix') {
+                    $pix = $this->pixRepository->findByExternalId($externalId);
+                    
+                    if (!$pix) {
+                        Log::warning('PIX não encontrado para webhook', [
+                            'external_id' => $externalId,
+                            'payload' => $payload,
+                        ]);
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Webhook recebido',
+                        ]);
+                    }
 
-                $this->pixService->processWebhook($pix->id, $gatewayType, $payload);
-                
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Webhook de PIX processado com sucesso',
+                    $this->pixService->processWebhook($pix->id, $gatewayType, $payload);
+                    
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Webhook recebido',
+                    ]);
+                } else {
+                    $withdraw = $this->withdrawRepository->findByExternalId($externalId);
+                    
+                    if (!$withdraw) {
+                        Log::warning('Saque não encontrado para webhook', [
+                            'external_id' => $externalId,
+                            'payload' => $payload,
+                        ]);
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Webhook recebido',
+                        ]);
+                    }
+
+                    $this->withdrawService->processWebhook($withdraw->id, $gatewayType, $payload);
+                    
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Webhook recebido',
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // Log processing errors but still return success
+                Log::error('Erro ao processar webhook (continuando)', [
+                    'error' => $e->getMessage(),
+                    'external_id' => $externalId ?? null,
+                    'payload' => $payload,
                 ]);
-            } else {
-                $withdraw = $this->withdrawRepository->findByExternalId($externalId);
-                
-                if (!$withdraw) {
-                    Log::warning('Saque não encontrado para webhook', [
-                        'external_id' => $externalId,
-                        'payload' => $payload,
-                    ]);
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Saque não encontrado',
-                    ], 404);
-                }
-
-                $this->withdrawService->processWebhook($withdraw->id, $gatewayType, $payload);
                 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Webhook de saque processado com sucesso',
+                    'message' => 'Webhook recebido',
                 ]);
             }
         } catch (\Exception $e) {
-            Log::error('Erro ao processar webhook', [
+            // Catch any unexpected errors and still return success
+            Log::error('Erro inesperado ao processar webhook', [
                 'error' => $e->getMessage(),
                 'payload' => $request->all(),
                 'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
-                'success' => false,
-                'message' => 'Erro ao processar webhook: ' . $e->getMessage(),
-            ], 500);
+                'success' => true,
+                'message' => 'Webhook recebido',
+            ]);
         }
     }
 
