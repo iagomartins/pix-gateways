@@ -2,19 +2,6 @@
 
 Sistema desenvolvido em Laravel para integração com múltiplas subadquirentes de pagamento, permitindo processamento de PIX e saques através de diferentes gateways de forma extensível e escalável.
 
-## 📋 Índice
-
-- [Sobre o Projeto](#sobre-o-projeto)
-- [Tecnologias Utilizadas](#tecnologias-utilizadas)
-- [Arquitetura e Padrões de Projeto](#arquitetura-e-padrões-de-projeto)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Instalação](#instalação)
-- [Configuração](#configuração)
-- [Uso da API](#uso-da-api)
-- [Exemplos de Requisições](#exemplos-de-requisições)
-- [Processamento de Webhooks](#processamento-de-webhooks)
-- [Testes](#testes)
-
 ## 🎯 Sobre o Projeto
 
 Este projeto foi desenvolvido como parte de um desafio técnico para demonstrar habilidades em desenvolvimento backend com Laravel. O sistema permite que diferentes usuários utilizem diferentes subadquirentes de pagamento, suportando multiadquirência de forma flexível e extensível.
@@ -219,13 +206,7 @@ git clone <url-do-repositorio>
 cd pix-gateways
 ```
 
-2. **Copie o arquivo de ambiente**
-
-```bash
-cp .env.example .env
-```
-
-3. **Construa e inicie os containers**
+2. **Construa e inicie os containers**
 
 ```bash
 docker-compose up -d --build
