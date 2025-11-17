@@ -869,26 +869,8 @@ O projeto possui uma suíte completa de testes automatizados cobrindo todos os e
 #### Docker (Recomendado)
 
 ```bash
-# Executar todos os testes
-docker-compose exec app php artisan test
-
 # Executar apenas testes de Feature (API endpoints)
 docker-compose exec app php artisan test --testsuite=Feature
-
-# Executar apenas testes Unit
-docker-compose exec app php artisan test --testsuite=Unit
-
-# Executar um teste específico
-docker-compose exec app php artisan test --filter=LoginTest
-
-# Executar um método de teste específico
-docker-compose exec app php artisan test --filter=test_successful_login
-
-# Executar testes com cobertura (requer Xdebug)
-docker-compose exec app php artisan test --coverage
-
-# Executar testes com saída detalhada
-docker-compose exec app php artisan test --verbose
 ```
 
 #### Usando Makefile
