@@ -1043,16 +1043,6 @@ O sistema registra logs detalhados de todas as operações:
 
 Logs podem ser visualizados em `storage/logs/laravel.log`.
 
-## 🚀 Deploy
-
-### Produção
-
-1. Configure `APP_ENV=production` e `APP_DEBUG=false`
-2. Configure um supervisor para o worker de filas
-3. Configure um servidor web (Nginx/Apache)
-4. Configure SSL/HTTPS
-5. Configure backup automático do banco de dados
-
 ### Supervisor (Exemplo)
 
 ```ini
